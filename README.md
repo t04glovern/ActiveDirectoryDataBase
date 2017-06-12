@@ -1,5 +1,5 @@
-# ActiveDirectoryDataBase
-The Active Directory based DB no one asked for
+# ActiveDirectoryDataBase (ADDB)
+ADDB - The Active Directory based DB no one asked for
 
 ## Example
 ```python
