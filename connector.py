@@ -27,16 +27,24 @@ class ActiveDirectoryDataBase:
         )
         return collection
 
-    def add_to_collection(self, collection_name):
+    def add_to_collection(self, collection_name, entry_id):
         for collection in self.list_collections():
             if collection['display_name'] == collection_name:
-                print("Collection " + collection_name + " found.")
+                self.client.groups.add_member(
+                    group_object_id=collection['object_id'],
+                    url="https://graph.windows.net/" + config.AD_TENANT_ID +
+                        "/directoryObjects/" + entry_id
+                )
             else:
                 new_collection = self.create_collection(collection_name)
-                print("Collection " + new_collection.display_name + " created.")
+                self.client.groups.add_member(
+                    group_object_id=new_collection.object_id,
+                    url="https://graph.windows.net/" + config.AD_TENANT_ID +
+                        "/directoryObjects/" + entry_id
+                )
 
     def add_entry(self, entry_id):
-        entry = self.client.users.create(
+        new_entry = self.client.users.create(
             UserCreateParameters(
                 user_principal_name=str(entry_id) + "@{}".format(self.tenant_id),
                 account_enabled=True,
@@ -48,7 +56,13 @@ class ActiveDirectoryDataBase:
                 )
             )
         )
-        return entry
+        return new_entry
+
+    def get_entry_id(self, entry_name):
+        for entry_item in self.list_entries():
+            if entry_item['display_name'] == str(entry_name):
+                return entry_item['object_id']
+        return 0
 
     def delete_entry(self, entry_id):
         self.client.users.delete(str(entry_id) + "@{}".format(self.tenant_id))
@@ -89,9 +103,18 @@ class ActiveDirectoryDataBase:
 
 if __name__ == "__main__":
     connect = ActiveDirectoryDataBase()
-    # connect.add_entry(9000)
-    # connect.delete_entry(9000)
-    # connect.add_to_collection("Test")
-    # connect.add_to_collection("NewCollection")
-    # print(connect.list_entries())
-    # print(connect.list_collections())
+    
+    # This will serve as the AD group (collection)
+    DB_COLLECTION = "collection"
+
+    # Create entries
+    for item in range(1300, 1350):
+        connect.add_entry(item)
+
+    # For all entries, add to collection
+    for item in range(1300, 1350):
+        connect.add_to_collection(DB_COLLECTION, connect.get_entry_id(item))
+
+    # Clean up all entries
+    for item in range(1300, 1350):
+        connect.delete_entry(str(item))
